@@ -33,9 +33,11 @@ public class Hook implements IXposedHookLoadPackage {
         if ("BANNER".equals(typeStr)) {
             String bannerId = (String)XposedHelpers.getObjectField(timelineObject, "mBannerId");
             Xlog.d("Blocked post: mType == BANNER <BannerID %s>", bannerId);
+            return true;
         } else if ("CAROUSEL".equals(typeStr)) {
             String carouselId = (String)XposedHelpers.getObjectField(timelineObject, "mCarouselId");
             Xlog.d("Blocked post: mType == CAROUSEL <CarouselID %s>", carouselId);
+            return true;
         } else if (!"POST".equals(typeStr)) {
             Xlog.w("Unknown post type: %s", typeStr);
         }
