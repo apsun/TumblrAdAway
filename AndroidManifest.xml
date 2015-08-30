@@ -4,7 +4,7 @@
     package="com.crossbowffs.tumblradaway">
     <uses-sdk
         android:minSdkVersion="14"
-        android:targetSdkVersion="22"/>
+        android:targetSdkVersion="23"/>
     <application
         android:label="Tumblr AdAway">
         <meta-data

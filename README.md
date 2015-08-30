@@ -15,11 +15,6 @@ Due to the ever-changing nature of software, only the latest version of
 the Tumblr app is supported. You may download an older version of
 Tumblr AdAway, but no support will be given for those versions.
 
-## Download
-
-Download a pre-built APK [here](https://bitbucket.org/crossbowffs/tumblradaway/downloads),
-or build the app yourself (it only takes a few seconds!)
-
 ## Disclaimer
 
 I am not responsible for any damage caused by the use of this software,
