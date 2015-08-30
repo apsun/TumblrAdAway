@@ -1,6 +1,5 @@
 package com.crossbowffs.tumblradaway;
 
-import android.database.Cursor;
 import android.os.Build;
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
@@ -12,9 +11,8 @@ import java.io.File;
 import java.util.List;
 
 public class Hook implements IXposedHookLoadPackage {
-    private static void removeAds(Object postAdapter) {
+    private static void removeAds(List<?> timeline) {
         Xlog.d("Dashboard refresh completed, filtering ads...");
-        List<?> timeline = (List<?>)XposedHelpers.getObjectField(postAdapter, "mTimeline");
         int adCount = 0;
         int postCount = timeline.size();
         for (int i = postCount - 1; i >= 0; i--) {
@@ -85,12 +83,12 @@ public class Hook implements IXposedHookLoadPackage {
         printInitInfo(lpparam);
 
         XposedHelpers.findAndHookMethod(
-            "com.tumblr.ui.widget.postadapter.PostAdapter", lpparam.classLoader,
-            "save", Cursor.class, boolean.class, new XC_MethodHook() {
+            "com.tumblr.ui.widget.timelineadapter.TimelineAdapter", lpparam.classLoader,
+            "applyItems", List.class, new XC_MethodHook() {
                 @Override
-                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                     try {
-                        removeAds(param.thisObject);
+                        removeAds((List<?>)param.args[0]);
                     } catch (Throwable e) {
                         Xlog.e("Error occurred while filtering ads", e);
                     }
