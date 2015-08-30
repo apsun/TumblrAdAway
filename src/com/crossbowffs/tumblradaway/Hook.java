@@ -75,7 +75,7 @@ public class Hook implements IXposedHookLoadPackage {
     }
 
     @Override
-    public void handleLoadPackage(final XC_LoadPackage.LoadPackageParam lpparam) throws Throwable {
+    public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) throws Throwable {
         if (!"com.tumblr".equals(lpparam.packageName)) {
             return;
         }
