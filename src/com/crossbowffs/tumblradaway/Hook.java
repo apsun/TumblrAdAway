@@ -75,7 +75,7 @@ public class Hook implements IXposedHookLoadPackage {
     }
 
     @Override
-    public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) throws Throwable {
+    public void handleLoadPackage(final XC_LoadPackage.LoadPackageParam lpparam) throws Throwable {
         if (!"com.tumblr".equals(lpparam.packageName)) {
             return;
         }
@@ -92,6 +92,16 @@ public class Hook implements IXposedHookLoadPackage {
                     } catch (Throwable e) {
                         Xlog.e("Error occurred while filtering ads", e);
                     }
+                }
+            }
+        );
+
+        XposedHelpers.findAndHookMethod(
+            "com.tumblr.model.PostAttribution", lpparam.classLoader,
+            "shouldShowNewAppAttribution", new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    param.setResult(false);
                 }
             }
         );
