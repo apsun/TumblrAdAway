@@ -82,28 +82,32 @@ public class Hook implements IXposedHookLoadPackage {
 
         printInitInfo(lpparam);
 
-        XposedHelpers.findAndHookMethod(
-            "com.tumblr.ui.widget.timelineadapter.TimelineAdapter", lpparam.classLoader,
-            "applyItems", List.class, new XC_MethodHook() {
-                @Override
-                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                    try {
-                        removeAds((List<?>)param.args[0]);
-                    } catch (Throwable e) {
-                        Xlog.e("Error occurred while filtering ads", e);
+        try {
+            XposedHelpers.findAndHookMethod(
+                "com.tumblr.ui.widget.timelineadapter.TimelineAdapter", lpparam.classLoader,
+                "applyItems", "com.tumblr.timeline.TimelineProvider$RequestType", List.class, new XC_MethodHook() {
+                    @Override
+                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                        try {
+                            removeAds((List<?>)param.args[1]);
+                        } catch (Throwable e) {
+                            Xlog.e("Error occurred while filtering ads", e);
+                        }
                     }
                 }
-            }
-        );
+            );
 
-        XposedHelpers.findAndHookMethod(
-            "com.tumblr.model.PostAttribution", lpparam.classLoader,
-            "shouldShowNewAppAttribution", new XC_MethodHook() {
-                @Override
-                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                    param.setResult(false);
+            XposedHelpers.findAndHookMethod(
+                "com.tumblr.model.PostAttribution", lpparam.classLoader,
+                "shouldShowNewAppAttribution", new XC_MethodHook() {
+                    @Override
+                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                        param.setResult(false);
+                    }
                 }
-            }
-        );
+            );
+        } catch (Throwable e) {
+            Xlog.e("Exception occurred while hooking methods", e);
+        }
     }
 }
