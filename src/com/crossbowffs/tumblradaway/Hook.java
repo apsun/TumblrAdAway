@@ -36,6 +36,10 @@ public class Hook implements IXposedHookLoadPackage {
             String carouselId = (String)XposedHelpers.getObjectField(timelineObject, "mCarouselId");
             Xlog.d("Blocked post: mType == CAROUSEL <CarouselID %s>", carouselId);
             return true;
+        } else if ("RICH_BANNER".equals(typeStr)) {
+            String richBannerId = (String)XposedHelpers.getObjectField(timelineObject, "mRichBannerId");
+            Xlog.d("Blocked post: mType == RICH_BANNER <RichBannerID %s>", richBannerId);
+            return true;
         } else if (!"POST".equals(typeStr)) {
             Xlog.w("Unknown post type: %s", typeStr);
         }
@@ -62,7 +66,9 @@ public class Hook implements IXposedHookLoadPackage {
         }
         File apkPath = new File(lpparam.appInfo.sourceDir);
         Object pkg = XposedHelpers.callMethod(parser, "parsePackage", apkPath, 0);
-        return (String)XposedHelpers.getObjectField(pkg, "mVersionName");
+        String versionName = (String)XposedHelpers.getObjectField(pkg, "mVersionName");
+        int versionCode = XposedHelpers.getIntField(pkg, "mVersionCode");
+        return String.format("%s (%d)", versionName, versionCode);
     }
 
     private static void printInitInfo(XC_LoadPackage.LoadPackageParam lpparam) {
@@ -72,6 +78,7 @@ public class Hook implements IXposedHookLoadPackage {
         Xlog.i("Android version: %s", Build.VERSION.RELEASE);
         Xlog.i("Xposed bridge version: %d", XposedBridge.XPOSED_BRIDGE_VERSION);
         Xlog.i("Tumblr APK version: %s", getPackageVersion(lpparam));
+        Xlog.i("Tumblr AdAway version: %s (%d)", BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE);
     }
 
     @Override
@@ -108,6 +115,7 @@ public class Hook implements IXposedHookLoadPackage {
             );
         } catch (Throwable e) {
             Xlog.e("Exception occurred while hooking methods", e);
+            throw e;
         }
     }
 }
