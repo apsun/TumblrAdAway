@@ -26,19 +26,18 @@ public class Hook implements IXposedHookLoadPackage {
     }
 
     private static boolean isAd(Object timelineObject) {
-        Enum<?> typeEnum = (Enum<?>)XposedHelpers.getObjectField(timelineObject, "mType");
+        Object internalData = XposedHelpers.getObjectField(timelineObject, "mObjectData");
+        Enum<?> typeEnum = (Enum<?>)XposedHelpers.callMethod(internalData, "getTimelineObjectType");
+        Object postId = XposedHelpers.callMethod(internalData, "getId");
         String typeStr = typeEnum.name();
         if ("BANNER".equals(typeStr)) {
-            String bannerId = (String)XposedHelpers.getObjectField(timelineObject, "mBannerId");
-            Xlog.d("Blocked post: mType == BANNER <BannerID %s>", bannerId);
+            Xlog.d("Blocked post: mType == BANNER <BannerID %s>", postId);
             return true;
         } else if ("CAROUSEL".equals(typeStr)) {
-            String carouselId = (String)XposedHelpers.getObjectField(timelineObject, "mCarouselId");
-            Xlog.d("Blocked post: mType == CAROUSEL <CarouselID %s>", carouselId);
+            Xlog.d("Blocked post: mType == CAROUSEL <CarouselID %s>", postId);
             return true;
         } else if ("RICH_BANNER".equals(typeStr)) {
-            String richBannerId = (String)XposedHelpers.getObjectField(timelineObject, "mRichBannerId");
-            Xlog.d("Blocked post: mType == RICH_BANNER <RichBannerID %s>", richBannerId);
+            Xlog.d("Blocked post: mType == RICH_BANNER <RichBannerID %s>", postId);
             return true;
         } else if (!"POST".equals(typeStr)) {
             Xlog.w("Unknown post type: %s", typeStr);
@@ -46,8 +45,7 @@ public class Hook implements IXposedHookLoadPackage {
 
         boolean isSponsored = (Boolean)XposedHelpers.callMethod(timelineObject, "isSponsored");
         if (isSponsored) {
-            long tumblrId = XposedHelpers.getLongField(timelineObject, "mTumblrId");
-            Xlog.d("Blocked post: isSponsored() == true <TumblrID %d>", tumblrId);
+            Xlog.d("Blocked post: isSponsored() == true <TumblrID %s>", postId);
             return true;
         }
 
