@@ -31,13 +31,16 @@ public class Hook implements IXposedHookLoadPackage {
         Object postId = XposedHelpers.callMethod(internalData, "getId");
         String typeStr = typeEnum.name();
         if ("BANNER".equals(typeStr)) {
-            Xlog.d("Blocked post: mType == BANNER <BannerID %s>", postId);
+            Xlog.d("Blocked post: getTimelineObjectType() == BANNER <ID %s>", postId);
             return true;
         } else if ("CAROUSEL".equals(typeStr)) {
-            Xlog.d("Blocked post: mType == CAROUSEL <CarouselID %s>", postId);
+            Xlog.d("Blocked post: getTimelineObjectType() == CAROUSEL <ID %s>", postId);
             return true;
         } else if ("RICH_BANNER".equals(typeStr)) {
-            Xlog.d("Blocked post: mType == RICH_BANNER <RichBannerID %s>", postId);
+            Xlog.d("Blocked post: getTimelineObjectType() == RICH_BANNER <ID %s>", postId);
+            return true;
+        } else if ("GEMINI_AD".equals(typeStr)) {
+            Xlog.d("Blocked post: getTimelineObjectType() == GEMINI_AD <ID %s>", postId);
             return true;
         } else if (!"POST".equals(typeStr)) {
             Xlog.w("Unknown post type: %s", typeStr);
@@ -45,7 +48,7 @@ public class Hook implements IXposedHookLoadPackage {
 
         boolean isSponsored = (Boolean)XposedHelpers.callMethod(timelineObject, "isSponsored");
         if (isSponsored) {
-            Xlog.d("Blocked post: isSponsored() == true <TumblrID %s>", postId);
+            Xlog.d("Blocked post: isSponsored() == true <ID %s>", postId);
             return true;
         }
 
@@ -90,11 +93,11 @@ public class Hook implements IXposedHookLoadPackage {
         try {
             XposedHelpers.findAndHookMethod(
                 "com.tumblr.ui.widget.timelineadapter.TimelineAdapter", lpparam.classLoader,
-                "applyItems", "com.tumblr.timeline.TimelineProvider$RequestType", List.class, new XC_MethodHook() {
+                "applyItems", List.class, boolean.class, new XC_MethodHook() {
                     @Override
                     protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                         try {
-                            removeAds((List<?>)param.args[1]);
+                            removeAds((List<?>)param.args[0]);
                         } catch (Throwable e) {
                             Xlog.e("Error occurred while filtering ads", e);
                         }
