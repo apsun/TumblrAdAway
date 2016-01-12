@@ -26,24 +26,14 @@ public class Hook implements IXposedHookLoadPackage {
     }
 
     private static boolean isAd(Object timelineObject) {
-        Object internalData = XposedHelpers.getObjectField(timelineObject, "mObjectData");
-        Enum<?> typeEnum = (Enum<?>)XposedHelpers.callMethod(internalData, "getTimelineObjectType");
-        Object postId = XposedHelpers.callMethod(internalData, "getId");
+        Object objectData = XposedHelpers.callMethod(timelineObject, "getObjectData");
+        Enum<?> typeEnum = (Enum<?>)XposedHelpers.callMethod(objectData, "getTimelineObjectType");
+        Object postId = XposedHelpers.callMethod(objectData, "getId");
         String typeStr = typeEnum.name();
-        if ("BANNER".equals(typeStr)) {
-            Xlog.d("Blocked post: getTimelineObjectType() == BANNER <ID %s>", postId);
+
+        if (isAdType(typeStr)) {
+            Xlog.d("Blocked post: getTimelineObjectType() == %s <ID %s>", typeStr, postId);
             return true;
-        } else if ("CAROUSEL".equals(typeStr)) {
-            Xlog.d("Blocked post: getTimelineObjectType() == CAROUSEL <ID %s>", postId);
-            return true;
-        } else if ("RICH_BANNER".equals(typeStr)) {
-            Xlog.d("Blocked post: getTimelineObjectType() == RICH_BANNER <ID %s>", postId);
-            return true;
-        } else if ("GEMINI_AD".equals(typeStr)) {
-            Xlog.d("Blocked post: getTimelineObjectType() == GEMINI_AD <ID %s>", postId);
-            return true;
-        } else if (!"POST".equals(typeStr)) {
-            Xlog.w("Unknown post type: %s", typeStr);
         }
 
         boolean isSponsored = (Boolean)XposedHelpers.callMethod(timelineObject, "isSponsored");
@@ -52,6 +42,17 @@ public class Hook implements IXposedHookLoadPackage {
             return true;
         }
 
+        return false;
+    }
+
+    private static boolean isAdType(String typeStr) {
+        if ("BANNER".equals(typeStr)) return true;
+        if ("CAROUSEL".equals(typeStr)) return true;
+        if ("RICH_BANNER".equals(typeStr)) return true;
+        if ("GEMINI_AD".equals(typeStr)) return true;
+        if ("BLOG_CARD".equals(typeStr)) return false;
+        if ("POST".equals(typeStr)) return false;
+        Xlog.w("Unknown post type: %s", typeStr);
         return false;
     }
 
@@ -100,10 +101,10 @@ public class Hook implements IXposedHookLoadPackage {
                             removeAds((List<?>)param.args[0]);
                         } catch (Throwable e) {
                             Xlog.e("Error occurred while filtering ads", e);
+                            throw e;
                         }
                     }
-                }
-            );
+                });
 
             XposedHelpers.findAndHookMethod(
                 "com.tumblr.model.PostAttribution", lpparam.classLoader,
@@ -112,8 +113,7 @@ public class Hook implements IXposedHookLoadPackage {
                     protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                         param.setResult(false);
                     }
-                }
-            );
+                });
         } catch (Throwable e) {
             Xlog.e("Exception occurred while hooking methods", e);
             throw e;
