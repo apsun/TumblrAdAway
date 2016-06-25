@@ -93,7 +93,7 @@ public class Hook implements IXposedHookLoadPackage {
 
         try {
             XposedHelpers.findAndHookMethod(
-                "com.tumblr.ui.widget.timelineadapter.TimelineAdapter", lpparam.classLoader,
+                "com.tumblr.ui.widget.timelineadapter.SimpleTimelineAdapter", lpparam.classLoader,
                 "applyItems", List.class, boolean.class, new XC_MethodHook() {
                     @Override
                     protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
