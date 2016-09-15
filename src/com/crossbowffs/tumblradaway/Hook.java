@@ -1,10 +1,9 @@
 package com.crossbowffs.tumblradaway;
 
+import android.content.Context;
+import android.content.Intent;
 import android.os.Build;
-import de.robv.android.xposed.IXposedHookLoadPackage;
-import de.robv.android.xposed.XC_MethodHook;
-import de.robv.android.xposed.XposedBridge;
-import de.robv.android.xposed.XposedHelpers;
+import de.robv.android.xposed.*;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
 import java.io.File;
@@ -92,6 +91,7 @@ public class Hook implements IXposedHookLoadPackage {
         printInitInfo(lpparam);
 
         try {
+            // Remove timeline ads
             XposedHelpers.findAndHookMethod(
                 "com.tumblr.ui.widget.timelineadapter.SimpleTimelineAdapter", lpparam.classLoader,
                 "applyItems", List.class, boolean.class, new XC_MethodHook() {
@@ -106,14 +106,16 @@ public class Hook implements IXposedHookLoadPackage {
                     }
                 });
 
+            // Remove extended app attribution footer
             XposedHelpers.findAndHookMethod(
                 "com.tumblr.model.PostAttribution", lpparam.classLoader,
-                "shouldShowNewAppAttribution", new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                        param.setResult(false);
-                    }
-                });
+                "shouldShowNewAppAttribution", XC_MethodReplacement.returnConstant(false));
+
+            // Block push ads
+            XposedHelpers.findAndHookMethod(
+                "com.kahuna.sdk.KahunaPushReceiver", lpparam.classLoader,
+                "onReceive", Context.class, Intent.class, XC_MethodReplacement.DO_NOTHING);
+
         } catch (Throwable e) {
             Xlog.e("Exception occurred while hooking methods", e);
             throw e;
