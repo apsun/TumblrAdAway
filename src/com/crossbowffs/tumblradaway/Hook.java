@@ -11,7 +11,7 @@ import java.util.List;
 
 public class Hook implements IXposedHookLoadPackage {
     private static void removeAds(List<?> timeline) {
-        Xlog.d("Dashboard refresh completed, filtering ads...");
+        Xlog.i("Dashboard refresh completed, filtering ads...");
         int adCount = 0;
         int postCount = timeline.size();
         for (int i = postCount - 1; i >= 0; i--) {
@@ -21,7 +21,7 @@ public class Hook implements IXposedHookLoadPackage {
                 adCount++;
             }
         }
-        Xlog.d("%d/%d posts filtered", adCount, postCount);
+        Xlog.i("%d/%d posts filtered", adCount, postCount);
     }
 
     private static boolean isAd(Object timelineObject) {
@@ -31,13 +31,13 @@ public class Hook implements IXposedHookLoadPackage {
         String typeStr = typeEnum.name();
 
         if (isAdType(typeStr)) {
-            Xlog.d("Blocked post: getTimelineObjectType() == %s <ID %s>", typeStr, postId);
+            Xlog.i("Blocked post: getTimelineObjectType() == %s <ID %s>", typeStr, postId);
             return true;
         }
 
         boolean isSponsored = (Boolean)XposedHelpers.callMethod(timelineObject, "isSponsored");
         if (isSponsored) {
-            Xlog.d("Blocked post: isSponsored() == true <ID %s>", postId);
+            Xlog.i("Blocked post: isSponsored() == true <ID %s>", postId);
             return true;
         }
 
@@ -56,20 +56,17 @@ public class Hook implements IXposedHookLoadPackage {
     }
 
     private static String getPackageVersion(XC_LoadPackage.LoadPackageParam lpparam) {
-        Class<?> parserCls = XposedHelpers.findClass("android.content.pm.PackageParser", lpparam.classLoader);
-        Object parser;
         try {
-            parser = parserCls.newInstance();
-        } catch (InstantiationException e) {
-            return null;
-        } catch (IllegalAccessException e) {
+            Class<?> parserCls = XposedHelpers.findClass("android.content.pm.PackageParser", lpparam.classLoader);
+            Object parser = parserCls.newInstance();
+            File apkPath = new File(lpparam.appInfo.sourceDir);
+            Object pkg = XposedHelpers.callMethod(parser, "parsePackage", apkPath, 0);
+            String versionName = (String)XposedHelpers.getObjectField(pkg, "mVersionName");
+            int versionCode = XposedHelpers.getIntField(pkg, "mVersionCode");
+            return String.format("%s (%d)", versionName, versionCode);
+        } catch (Throwable e) {
             return null;
         }
-        File apkPath = new File(lpparam.appInfo.sourceDir);
-        Object pkg = XposedHelpers.callMethod(parser, "parsePackage", apkPath, 0);
-        String versionName = (String)XposedHelpers.getObjectField(pkg, "mVersionName");
-        int versionCode = XposedHelpers.getIntField(pkg, "mVersionCode");
-        return String.format("%s (%d)", versionName, versionCode);
     }
 
     private static void printInitInfo(XC_LoadPackage.LoadPackageParam lpparam) {

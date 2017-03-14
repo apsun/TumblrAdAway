@@ -26,7 +26,10 @@ android {
         versionCode 8
         versionName "1.7"
         minSdkVersion 19
-        targetSdkVersion 24
+        targetSdkVersion 25
+        buildConfigField("String", "LOG_TAG", "\"TumblrAdAway\"")
+        buildConfigField("int", "LOG_LEVEL", "4")
+        buildConfigField("boolean", "LOG_TO_XPOSED", "true")
     }
 
     sourceSets {
