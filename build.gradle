@@ -4,7 +4,7 @@ buildscript {
     }
 
     dependencies {
-        classpath "com.android.tools.build:gradle:2.1.3"
+        classpath "com.android.tools.build:gradle:2.3.0"
     }
 }
 
@@ -19,8 +19,8 @@ dependencies {
 }
 
 android {
-    compileSdkVersion 24
-    buildToolsVersion "24.0.2"
+    compileSdkVersion 25
+    buildToolsVersion "25.0.2"
 
     defaultConfig {
         versionCode 8
@@ -35,5 +35,9 @@ android {
             java.srcDir "src"
             assets.srcDir "assets"
         }
+    }
+
+    lintOptions {
+        abortOnError false
     }
 }
