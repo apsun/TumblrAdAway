@@ -8,7 +8,7 @@ Write your issue description here.
 - Android version ("7.1.1"): 
 - Xposed version ("53"): 
 - Tumblr version ("7.6.0.21"): 
-- Tumblr AdAway AdAway version ("1.1"): 
+- Tumblr AdAway version ("1.1"): 
 
 Please paste your Xposed logs (Xposed Installer -> Logs -> Menu -> Save to SD card) below:
 
