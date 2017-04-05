@@ -1,7 +1,5 @@
 package com.crossbowffs.tumblradaway;
 
-import android.content.Context;
-import android.content.Intent;
 import android.os.Build;
 import de.robv.android.xposed.*;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
@@ -107,11 +105,6 @@ public class Hook implements IXposedHookLoadPackage {
             XposedHelpers.findAndHookMethod(
                 "com.tumblr.model.PostAttribution", lpparam.classLoader,
                 "shouldShowNewAppAttribution", XC_MethodReplacement.returnConstant(false));
-
-            // Block push ads
-            XposedHelpers.findAndHookMethod(
-                "com.kahuna.sdk.KahunaPushReceiver", lpparam.classLoader,
-                "onReceive", Context.class, Intent.class, XC_MethodReplacement.DO_NOTHING);
 
         } catch (Throwable e) {
             Xlog.e("Exception occurred while hooking methods", e);
