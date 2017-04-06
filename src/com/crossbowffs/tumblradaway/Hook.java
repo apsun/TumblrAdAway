@@ -1,13 +1,27 @@
 package com.crossbowffs.tumblradaway;
 
-import android.os.Build;
-import de.robv.android.xposed.*;
+import de.robv.android.xposed.IXposedHookLoadPackage;
+import de.robv.android.xposed.XC_MethodHook;
+import de.robv.android.xposed.XC_MethodReplacement;
+import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
-import java.io.File;
 import java.util.List;
 
 public class Hook implements IXposedHookLoadPackage {
+    private static class RemoveAdsHook extends XC_MethodHook {
+        @Override
+        protected void beforeHookedMethod(XC_MethodHook.MethodHookParam param) throws Throwable {
+            try {
+                Xlog.i("Called %s", Xutil.getMethodName(param));
+                removeAds((List<?>)param.args[0]);
+            } catch (Throwable e) {
+                Xlog.e("Error occurred while filtering ads", e);
+                throw e;
+            }
+        }
+    }
+
     private static void removeAds(List<?> timeline) {
         Xlog.i("Dashboard refresh completed, filtering ads...");
         int adCount = 0;
@@ -43,38 +57,16 @@ public class Hook implements IXposedHookLoadPackage {
     }
 
     private static boolean isAdType(String typeStr) {
+        if ("POST".equals(typeStr)) return false;
+        if ("BLOG_CARD".equals(typeStr)) return false;
         if ("BANNER".equals(typeStr)) return true;
         if ("CAROUSEL".equals(typeStr)) return true;
         if ("RICH_BANNER".equals(typeStr)) return true;
         if ("GEMINI_AD".equals(typeStr)) return true;
-        if ("BLOG_CARD".equals(typeStr)) return false;
-        if ("POST".equals(typeStr)) return false;
+        if ("CLIENT_SIDE_MEDIATION".equals(typeStr)) return true;
+        if ("FAN_MEDIATION".equals(typeStr)) return true;
         Xlog.w("Unknown post type: %s", typeStr);
         return false;
-    }
-
-    private static String getPackageVersion(XC_LoadPackage.LoadPackageParam lpparam) {
-        try {
-            Class<?> parserCls = XposedHelpers.findClass("android.content.pm.PackageParser", lpparam.classLoader);
-            Object parser = parserCls.newInstance();
-            File apkPath = new File(lpparam.appInfo.sourceDir);
-            Object pkg = XposedHelpers.callMethod(parser, "parsePackage", apkPath, 0);
-            String versionName = (String)XposedHelpers.getObjectField(pkg, "mVersionName");
-            int versionCode = XposedHelpers.getIntField(pkg, "mVersionCode");
-            return String.format("%s (%d)", versionName, versionCode);
-        } catch (Throwable e) {
-            return null;
-        }
-    }
-
-    private static void printInitInfo(XC_LoadPackage.LoadPackageParam lpparam) {
-        Xlog.i("Tumblr AdAway initializing...");
-        Xlog.i("Phone manufacturer: %s", Build.MANUFACTURER);
-        Xlog.i("Phone model: %s", Build.MODEL);
-        Xlog.i("Android version: %s", Build.VERSION.RELEASE);
-        Xlog.i("Xposed bridge version: %d", XposedBridge.XPOSED_BRIDGE_VERSION);
-        Xlog.i("Tumblr APK version: %s", getPackageVersion(lpparam));
-        Xlog.i("Tumblr AdAway version: %s (%d)", BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE);
     }
 
     @Override
@@ -83,32 +75,33 @@ public class Hook implements IXposedHookLoadPackage {
             return;
         }
 
-        printInitInfo(lpparam);
+        Xlog.i("Tumblr AdAway initializing...");
+        Xutil.printInitInfo(lpparam);
 
-        try {
-            // Remove timeline ads
-            XposedHelpers.findAndHookMethod(
-                "com.tumblr.ui.widget.timelineadapter.SimpleTimelineAdapter", lpparam.classLoader,
-                "applyItems", List.class, boolean.class, new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                        try {
-                            removeAds((List<?>)param.args[0]);
-                        } catch (Throwable e) {
-                            Xlog.e("Error occurred while filtering ads", e);
-                            throw e;
-                        }
-                    }
-                });
+        // Block ALL the ads!
+        Xutil.findAndHookMethod(
+            "com.tumblr.ad.AdProvider", lpparam.classLoader,
+            "loadAds",
+            Xutil.doNothingAndLog());
 
-            // Remove extended app attribution footer
-            XposedHelpers.findAndHookMethod(
-                "com.tumblr.model.PostAttribution", lpparam.classLoader,
-                "shouldShowNewAppAttribution", XC_MethodReplacement.returnConstant(false));
+        // Remove timeline ads
+        Xutil.findAndHookMethod(
+            "com.tumblr.ui.widget.timelineadapter.SimpleTimelineAdapter", lpparam.classLoader,
+            "applyItems", List.class, boolean.class,
+            new RemoveAdsHook());
 
-        } catch (Throwable e) {
-            Xlog.e("Exception occurred while hooking methods", e);
-            throw e;
-        }
+        // Remove timeline ads (new version)
+        Xutil.findAndHookMethod(
+            "com.tumblr.ui.widget.graywater.GraywaterTimelineAdapter", lpparam.classLoader,
+            "applyItems", List.class, boolean.class,
+            new RemoveAdsHook());
+
+        // Remove extended app attribution footer
+        Xutil.findAndHookMethod(
+            "com.tumblr.model.PostAttribution", lpparam.classLoader,
+            "shouldShowNewAppAttribution",
+            XC_MethodReplacement.returnConstant(false));
+
+        Xlog.i("Tumblr AdAway initialization complete!");
     }
 }
