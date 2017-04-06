@@ -9,19 +9,6 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage;
 import java.util.List;
 
 public class Hook implements IXposedHookLoadPackage {
-    private static class RemoveAdsHook extends XC_MethodHook {
-        @Override
-        protected void beforeHookedMethod(XC_MethodHook.MethodHookParam param) throws Throwable {
-            try {
-                Xlog.i("Called %s", Xutil.getMethodName(param));
-                removeAds((List<?>)param.args[0]);
-            } catch (Throwable e) {
-                Xlog.e("Error occurred while filtering ads", e);
-                throw e;
-            }
-        }
-    }
-
     private static void removeAds(List<?> timeline) {
         Xlog.i("Dashboard refresh completed, filtering ads...");
         int adCount = 0;
@@ -38,8 +25,8 @@ public class Hook implements IXposedHookLoadPackage {
 
     private static boolean isAd(Object timelineObject) {
         Object objectData = XposedHelpers.callMethod(timelineObject, "getObjectData");
-        Enum<?> typeEnum = (Enum<?>)XposedHelpers.callMethod(objectData, "getTimelineObjectType");
         Object postId = XposedHelpers.callMethod(objectData, "getId");
+        Enum<?> typeEnum = (Enum<?>)XposedHelpers.callMethod(objectData, "getTimelineObjectType");
         String typeStr = typeEnum.name();
 
         if (isAdType(typeStr)) {
@@ -69,6 +56,76 @@ public class Hook implements IXposedHookLoadPackage {
         return false;
     }
 
+    private static void forceEnableGraywater(XC_LoadPackage.LoadPackageParam lpparam) {
+        Xutil.findAndHookMethod(
+            "com.tumblr.App", lpparam.classLoader,
+            "isBeta",
+            XC_MethodReplacement.returnConstant(true));
+
+        Xutil.findAndHookMethod(
+            "com.tumblr.feature.Feature", lpparam.classLoader,
+            "isEnabled", "com.tumblr.feature.Feature",
+            new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    Enum<?> arg = (Enum<?>)param.args[0];
+                    if ("GRAYWATER_DASHBOARD".equals(arg.name())) {
+                        param.setResult(true);
+                    }
+                }
+            });
+    }
+
+    private static void blockAdProvider(XC_LoadPackage.LoadPackageParam lpparam) {
+        Xutil.findAndHookMethod(
+            "com.tumblr.ad.AdProvider", lpparam.classLoader,
+            "loadAds",
+            Xutil.doNothingAndLog());
+    }
+
+    private static void blockSimpleTimelineAds(XC_LoadPackage.LoadPackageParam lpparam) {
+        Xutil.findAndHookMethod(
+            "com.tumblr.ui.widget.timelineadapter.SimpleTimelineAdapter", lpparam.classLoader,
+            "applyItems", List.class, boolean.class,
+            new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(XC_MethodHook.MethodHookParam param) throws Throwable {
+                    try {
+                        removeAds((List<?>)param.args[0]);
+                    } catch (Throwable e) {
+                        Xlog.e("Error occurred while filtering ads", e);
+                        throw e;
+                    }
+                }
+            });
+    }
+
+    private static void blockGraywaterTimelineAds(XC_LoadPackage.LoadPackageParam lpparam) {
+        Xutil.findAndHookMethod(
+            "com.tumblr.graywater.GraywaterAdapter", lpparam.classLoader,
+            "add", int.class, Object.class, boolean.class,
+            new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    try {
+                        if (isAd(param.args[1])) {
+                            param.setResult(null);
+                        }
+                    } catch (Throwable e) {
+                        Xlog.e("Error occurred while filtering ads (Graywater)", e);
+                        throw e;
+                    }
+                }
+            });
+    }
+
+    private static void blockExtendedFooter(XC_LoadPackage.LoadPackageParam lpparam) {
+        Xutil.findAndHookMethod(
+            "com.tumblr.model.PostAttribution", lpparam.classLoader,
+            "shouldShowNewAppAttribution",
+            XC_MethodReplacement.returnConstant(false));
+    }
+
     @Override
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) throws Throwable {
         if (!"com.tumblr".equals(lpparam.packageName)) {
@@ -78,29 +135,11 @@ public class Hook implements IXposedHookLoadPackage {
         Xlog.i("Tumblr AdAway initializing...");
         Xutil.printInitInfo(lpparam);
 
-        // Block ALL the ads!
-        Xutil.findAndHookMethod(
-            "com.tumblr.ad.AdProvider", lpparam.classLoader,
-            "loadAds",
-            Xutil.doNothingAndLog());
-
-        // Remove timeline ads
-        Xutil.findAndHookMethod(
-            "com.tumblr.ui.widget.timelineadapter.SimpleTimelineAdapter", lpparam.classLoader,
-            "applyItems", List.class, boolean.class,
-            new RemoveAdsHook());
-
-        // Remove timeline ads (new version)
-        Xutil.findAndHookMethod(
-            "com.tumblr.ui.widget.graywater.GraywaterTimelineAdapter", lpparam.classLoader,
-            "applyItems", List.class, boolean.class,
-            new RemoveAdsHook());
-
-        // Remove extended app attribution footer
-        Xutil.findAndHookMethod(
-            "com.tumblr.model.PostAttribution", lpparam.classLoader,
-            "shouldShowNewAppAttribution",
-            XC_MethodReplacement.returnConstant(false));
+        // forceEnableGraywater(lpparam);
+        blockAdProvider(lpparam);
+        blockSimpleTimelineAds(lpparam);
+        blockGraywaterTimelineAds(lpparam);
+        blockExtendedFooter(lpparam);
 
         Xlog.i("Tumblr AdAway initialization complete!");
     }
