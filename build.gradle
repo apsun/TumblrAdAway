@@ -20,11 +20,11 @@ dependencies {
 
 android {
     compileSdkVersion 25
-    buildToolsVersion "25.0.2"
+    buildToolsVersion "26.0.0"
 
     defaultConfig {
-        versionCode 11
-        versionName "1.7.1"
+        versionCode 12
+        versionName "1.8"
         minSdkVersion 4
         targetSdkVersion 25
         buildConfigField("String", "LOG_TAG", "\"TumblrAdAway\"")

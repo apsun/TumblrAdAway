@@ -52,6 +52,7 @@ public class Hook implements IXposedHookLoadPackage {
         if ("GEMINI_AD".equals(typeStr)) return true;
         if ("CLIENT_SIDE_MEDIATION".equals(typeStr)) return true;
         if ("FAN_MEDIATION".equals(typeStr)) return true;
+        if ("TITLE".equals(typeStr)) return true;
         Xlog.w("Unknown post type: %s", typeStr);
         return false;
     }
