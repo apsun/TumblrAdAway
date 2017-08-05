@@ -4,7 +4,7 @@ buildscript {
     }
 
     dependencies {
-        classpath "com.android.tools.build:gradle:2.3.0"
+        classpath "com.android.tools.build:gradle:2.3.3"
     }
 }
 
@@ -19,14 +19,14 @@ dependencies {
 }
 
 android {
-    compileSdkVersion 25
-    buildToolsVersion "26.0.0"
+    compileSdkVersion 26
+    buildToolsVersion "26.0.1"
 
     defaultConfig {
         versionCode 12
         versionName "1.8"
         minSdkVersion 4
-        targetSdkVersion 25
+        targetSdkVersion 26
         buildConfigField("String", "LOG_TAG", "\"TumblrAdAway\"")
         buildConfigField("int", "LOG_LEVEL", "4")
         buildConfigField("boolean", "LOG_TO_XPOSED", "true")
